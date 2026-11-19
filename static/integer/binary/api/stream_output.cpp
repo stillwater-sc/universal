@@ -43,8 +43,9 @@ template<unsigned nbits, typename BlockType, IntegerNumberType NumberType>
 int VerifyValue(std::uint64_t u, bool reportTestCases) {
 	constexpr std::uint64_t mask = (nbits == 64) ? ~std::uint64_t(0) : ((std::uint64_t(1) << (nbits % 64)) - 1u);
 	const bool negative = (NumberType == IntegerNumberType::IntegerNumber) && ((u >> (nbits - 1)) & 1u);
-	const std::string expected =
-	    negative ? std::to_string(static_cast<std::int64_t>(u | ~mask)) : std::to_string(u);
+	// a NaturalNumber's all-zeros encoding is NaNN, Not a Natural Number, and prints as such (#2137)
+	const std::string expected = (NumberType == IntegerNumberType::NaturalNumber && u == 0) ? std::string("NaNN")
+	    : negative ? std::to_string(static_cast<std::int64_t>(u | ~mask)) : std::to_string(u);
 
 	integer<nbits, BlockType, NumberType> v;
 	v.setbits(u);

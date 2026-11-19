@@ -115,8 +115,9 @@ int VerifyCastRule(bool reportTestCases) {
 	expect("whole<8>(254.5) is 254", static_cast<unsigned>(W8(254.5)) == 254u);
 	expect("whole<8>(-3.0) clamps to 0", W8(-3.0).iszero());
 	using N8 = integer<8, std::uint8_t, NaturalNumber>;
-	expect("natural<8>(0.5) clamps to 1, its smallest value", static_cast<unsigned>(N8(0.5)) == 1u);
-	expect("natural<8>(-3.0) clamps to 1", static_cast<unsigned>(N8(-3.0)) == 1u);
+	// a NaturalNumber has no 0: below its domain a value converts to NaNN, Not a Natural Number (#2137)
+	expect("natural<8>(0.5) is NaNN", N8(0.5).isnan());
+	expect("natural<8>(-3.0) is NaNN", N8(-3.0).isnan());
 	return fails;
 }
 
@@ -232,14 +233,14 @@ int VerifyDomains(bool reportTestCases) {
 	// parse applies the domain to the signed result: no negative unsigned value, no Natural 0
 	{
 		N n(4);
-		expect("natural parse(\"-10\") is rejected", !parse(std::string("-10"), n) && static_cast<unsigned>(n) == 4u);
+		expect("natural parse(\"-10\") is NaNN", parse(std::string("-10"), n) && n.isnan());
 		expect("natural parse(\"+10\") is 10", parse(std::string("+10"), n) && static_cast<unsigned>(n) == 10u);
 		W w(4);
 		expect("whole parse(\"-10\") is rejected", !parse(std::string("-10"), w) && static_cast<unsigned>(w) == 4u);
 		expect("whole<8> parse(\"-256\") (wraps to 0) is rejected", !parse(std::string("-256"), w) && static_cast<unsigned>(w) == 4u);
 		expect("whole parse(\"-0\") is 0", parse(std::string("-0"), w) && w.iszero());
 		integer<9, std::uint8_t, NaturalNumber> n9(3);
-		expect("natural<9> parse(\"0x200\") (bit 9 is padding) is rejected", !parse(std::string("0x200"), n9));
+		expect("natural<9> parse(\"0x200\") (bit 9 is padding) is NaNN", parse(std::string("0x200"), n9) && n9.isnan());
 	}
 	// setbit and setbyte never write a padding bit
 	{
@@ -372,7 +373,7 @@ int VerifyLongDoubleDomain(bool reportTestCases) {
 	using N16 = integer<16, std::uint8_t, NaturalNumber>;
 	using N64 = integer<64, std::uint32_t, NaturalNumber>;
 	using W64 = integer<64, std::uint32_t, WholeNumber>;
-	expect("natural<16>(0.5L) clamps to 1", static_cast<unsigned>(N16(0.5L)) == 1u);
+	expect("natural<16>(0.5L) is NaNN", N16(0.5L).isnan());
 	expect("natural<16>(1.5L) truncates to 1", static_cast<unsigned>(N16(1.5L)) == 1u);
 	expect("natural<16>(7.0L) is 7", static_cast<unsigned>(N16(7.0L)) == 7u);
 	long double p60 = 1.0L;

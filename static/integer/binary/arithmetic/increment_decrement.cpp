@@ -25,8 +25,9 @@
    - carry and borrow across limbs, and wraparound at both ends of the encoding;
    - widths above 64 bits, up to elreal's integer<256, uint32_t> exponent, where the
      expected values come from operator+= instead of a native integer.
-   Up to 64 bits the reference is native 64-bit arithmetic modulo 2^nbits, which is the same
-   bit arithmetic for IntegerNumber, WholeNumber and NaturalNumber.
+   Up to 64 bits the reference is native 64-bit arithmetic modulo 2^nbits, the same bit arithmetic
+   for IntegerNumber and WholeNumber; a NaturalNumber adds the NaNN rules (#2137): its all-zeros
+   encoding, Not a Natural Number, propagates, and a difference below 1 is NaNN.
 */
 
 namespace sw { namespace universal {
@@ -67,6 +68,13 @@ void VerifyValue(std::uint64_t u, std::uint64_t w, Failures& fail) {
 	using Integer = integer<nbits, BlockType, NumberType>;
 	constexpr std::uint64_t mask = (nbits == 64) ? ~std::uint64_t(0) : ((std::uint64_t(1) << (nbits % 64)) - 1u);
 	auto wrap = [](std::uint64_t x) { return x & mask; };
+	// the reference arithmetic: modulo 2^nbits, and for a NaturalNumber the NaNN rules (#2137): NaNN,
+	// the all-zeros encoding, propagates through ++, --, + and -, and a difference below 1 is NaNN
+	constexpr bool natural = (NumberType == IntegerNumberType::NaturalNumber);
+	auto inc = [&](std::uint64_t x) { return (natural && x == 0) ? std::uint64_t(0) : wrap(x + 1); };
+	auto dec = [&](std::uint64_t x) { return (natural && x == 0) ? std::uint64_t(0) : wrap(x - 1); };
+	auto add = [&](std::uint64_t x, std::uint64_t y) { return (natural && (x == 0 || y == 0)) ? std::uint64_t(0) : wrap(x + y); };
+	auto sub = [&](std::uint64_t x, std::uint64_t y) { return (natural && (x == 0 || y == 0 || x <= y)) ? std::uint64_t(0) : wrap(x - y); };
 	const std::string cfg = std::string("integer<") + std::to_string(nbits) + ", " +
 	                        std::to_string(sizeof(BlockType) * 8) + "-bit limbs, " + Name(NumberType) + ">";
 	auto tag = [&](const char* expr) {
@@ -81,13 +89,13 @@ void VerifyValue(std::uint64_t u, std::uint64_t w, Failures& fail) {
 	};
 
 	// alone: what the expression yields, and what it leaves in a
-	{ Integer a(v); Integer r = a++; expect("r = a++ -> r", r, u);           expect("r = a++ -> a", a, wrap(u + 1)); }
-	{ Integer a(v); Integer r = a--; expect("r = a-- -> r", r, u);           expect("r = a-- -> a", a, wrap(u - 1)); }
-	{ Integer a(v); Integer r = ++a; expect("r = ++a -> r", r, wrap(u + 1)); expect("r = ++a -> a", a, wrap(u + 1)); }
-	{ Integer a(v); Integer r = --a; expect("r = --a -> r", r, wrap(u - 1)); expect("r = --a -> a", a, wrap(u - 1)); }
+	{ Integer a(v); Integer r = a++; expect("r = a++ -> r", r, u);           expect("r = a++ -> a", a, inc(u)); }
+	{ Integer a(v); Integer r = a--; expect("r = a-- -> r", r, u);           expect("r = a-- -> a", a, dec(u)); }
+	{ Integer a(v); Integer r = ++a; expect("r = ++a -> r", r, inc(u)); expect("r = ++a -> a", a, inc(u)); }
+	{ Integer a(v); Integer r = --a; expect("r = --a -> r", r, dec(u)); expect("r = --a -> a", a, dec(u)); }
 	// prefix returns the variable itself, so it can be incremented again in place
-	{ Integer a(v); ++(++a); expect("++(++a) -> a", a, wrap(u + 2)); }
-	{ Integer a(v); --(--a); expect("--(--a) -> a", a, wrap(u - 2)); }
+	{ Integer a(v); ++(++a); expect("++(++a) -> a", a, inc(inc(u))); }
+	{ Integer a(v); --(--a); expect("--(--a) -> a", a, dec(dec(u))); }
 	{
 		Integer a(v);
 		if (&(++a) != &a) fail(tag("&(++a) == &a"), 0, 1);
@@ -98,38 +106,38 @@ void VerifyValue(std::uint64_t u, std::uint64_t w, Failures& fail) {
 	{
 		Integer a(v);
 		Integer c = a++ + b;
-		expect("c = a++ + b -> c", c, wrap(u + w));
-		expect("c = a++ + b -> a", a, wrap(u + 1));
+		expect("c = a++ + b -> c", c, add(u, w));
+		expect("c = a++ + b -> a", a, inc(u));
 	}
 	{
 		Integer a(v);
 		Integer c = b + a++;
-		expect("c = b + a++ -> c", c, wrap(w + u));
-		expect("c = b + a++ -> a", a, wrap(u + 1));
+		expect("c = b + a++ -> c", c, add(w, u));
+		expect("c = b + a++ -> a", a, inc(u));
 	}
 	{
 		Integer a(v);
 		Integer c = a-- - b;
-		expect("c = a-- - b -> c", c, wrap(u - w));
-		expect("c = a-- - b -> a", a, wrap(u - 1));
+		expect("c = a-- - b -> c", c, sub(u, w));
+		expect("c = a-- - b -> a", a, dec(u));
 	}
 	{
 		Integer a(v);
 		Integer c = b - a--;
-		expect("c = b - a-- -> c", c, wrap(w - u));
-		expect("c = b - a-- -> a", a, wrap(u - 1));
+		expect("c = b - a-- -> c", c, sub(w, u));
+		expect("c = b - a-- -> a", a, dec(u));
 	}
 	{
 		Integer a(v);
 		Integer c = ++a + b;
-		expect("c = ++a + b -> c", c, wrap(u + 1 + w));
-		expect("c = ++a + b -> a", a, wrap(u + 1));
+		expect("c = ++a + b -> c", c, add(inc(u), w));
+		expect("c = ++a + b -> a", a, inc(u));
 	}
 	{
 		Integer a(v);
 		Integer c = --a - b;
-		expect("c = --a - b -> c", c, wrap(u - 1 - w));
-		expect("c = --a - b -> a", a, wrap(u - 1));
+		expect("c = --a - b -> c", c, sub(dec(u), w));
+		expect("c = --a - b -> a", a, dec(u));
 	}
 	if constexpr (NumberType == IntegerNumberType::IntegerNumber) {
 		// operator*= multiplies signed operands; the product modulo 2^nbits is the native one
@@ -137,7 +145,7 @@ void VerifyValue(std::uint64_t u, std::uint64_t w, Failures& fail) {
 			Integer a(v);
 			Integer c = a++ * b;
 			expect("c = a++ * b -> c", c, wrap(u * w));
-			expect("c = a++ * b -> a", a, wrap(u + 1));
+			expect("c = a++ * b -> a", a, inc(u));
 		}
 		{ Integer a(v); Integer c = ++a * b; expect("c = ++a * b -> c", c, wrap((u + 1) * w)); }
 	}
@@ -147,14 +155,14 @@ void VerifyValue(std::uint64_t u, std::uint64_t w, Failures& fail) {
 		Integer a(v);
 		Integer x = a++;
 		x = a++;
-		expect("x = a++; x = a++ -> x", x, wrap(u + 1));
-		expect("x = a++; x = a++ -> a", a, wrap(u + 2));
+		expect("x = a++; x = a++ -> x", x, inc(u));
+		expect("x = a++; x = a++ -> a", a, inc(inc(u)));
 	}
 	{
 		Integer a(v);
 		a++; ++a; a++;
 		a--; --a; a--;
-		expect("three up, three down -> a", a, u);
+		expect("three up, three down -> a", a, dec(dec(dec(inc(inc(inc(u)))))));   // u, but NaNN stays NaNN
 	}
 }
 

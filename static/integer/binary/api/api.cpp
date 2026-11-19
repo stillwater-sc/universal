@@ -58,67 +58,62 @@ try {
 		}
 	}
 
-	// natural numbers
+	// natural numbers {1, 2, 3, ...}: a result outside the domain is NaNN, Not a Natural Number, the
+	// all-zeros encoding, and never throws, even with INTEGER_THROW_ARITHMETIC_EXCEPTION on (USER
+	// decision on #2137; static/integer/binary/api/natural_nann.cpp covers NaNN in full)
 	{
 		int start = nrOfFailedTestCases;
 		using Natural = integer<16, std::uint16_t, IntegerNumberType::NaturalNumber>;
-		expect("natural = 0", [] { Natural a; a = 0; return a; }, true);
-		expect("natural = -1", [] { Natural b; b = -1; return b; }, true);
-		expect("natural 1 / 2 = 0", [] { Natural a(1), b(2); return Natural(a / b); }, true);
-		expect("natural 1 - 2", [] { Natural a(1), b(2); return Natural(a - b); }, true);
-		expect("natural 2 - 2 = 0", [] { Natural a(2), b(2); return Natural(a - b); }, true);
-		expect("natural 7 / 2 = 3", [] { Natural a(7), b(2); return Natural(a / b); }, false);
-		// a rejected assignment throws before the target is touched
+		expect("natural = 0", [] { Natural a; a = 0; return a; }, false);
+		expect("natural = -1", [] { Natural b; b = -1; return b; }, false);
+		expect("natural 1 / 2", [] { Natural a(1), b(2); return Natural(a / b); }, false);
+		expect("natural 1 - 2", [] { Natural a(1), b(2); return Natural(a - b); }, false);
+		auto nann = [&](const char* what, bool isNaNN) {
+			if (!isNaNN) {
+				std::cout << "Incorrect: " << what << " is not NaNN\n";
+				++nrOfFailedTestCases;
+			}
+		};
+		nann("natural = 0", Natural(0).isnan());
+		nann("natural = -1", Natural(-1).isnan());
+		nann("natural 1 / 2", (Natural(1) / Natural(2)).isnan());
+		nann("natural 1 - 2", (Natural(1) - Natural(2)).isnan());
+		nann("natural 2 - 2", (Natural(2) - Natural(2)).isnan());
+		if (unsigned(Natural(7) / Natural(2)) != 3u) {
+			std::cout << "Incorrect: natural 7 / 2 is not 3\n";
+			++nrOfFailedTestCases;
+		}
+		// a WholeNumber keeps its domain exception: a rejected assignment throws before the target changes
 		{
-			// each rejected assignment must throw, and must leave the value as it was
-			auto keeps = [&](const char* what, auto& target, auto value, unsigned expected) {
-				bool thrown = false;
-				try { target = value; }
-				catch (const integer_encoding_exception&) { thrown = true; }
-				if (!thrown || static_cast<unsigned>(target) != expected) {
-					std::cout << "Incorrect: " << what << (thrown ? "" : " did not throw") << ", value now " << target << '\n';
-					++nrOfFailedTestCases;
-				}
-			};
-			Natural n(7);
-			keeps("natural 7, then = 0", n, 0, 7u);
-			keeps("natural 7, then = 0u", n, 0u, 7u);
 			using WholeN = integer<16, std::uint16_t, IntegerNumberType::WholeNumber>;
 			WholeN w(9);
-			keeps("whole 9, then = -1", w, -1, 9u);
+			bool thrown = false;
+			try { w = -1; }
+			catch (const integer_encoding_exception&) { thrown = true; }
+			if (!thrown || static_cast<unsigned>(w) != 9u) {
+				std::cout << "Incorrect: whole 9, then = -1" << (thrown ? "" : " did not throw") << ", value now " << w << '\n';
+				++nrOfFailedTestCases;
+			}
 		}
-		// the library's own internal zeros (division scratch, a parsed '0' digit, comparison and abs
-		// with a native 0) must never go through the NaturalNumber zero check: with exceptions enabled
-		// that check throws inside noexcept code and terminates. Run at 8- and 32-bit limbs, which take
-		// the general division path.
+		// the library's own internal zeros (division scratch, the parse accumulator, comparison and abs)
+		// at 8- and 32-bit limbs, which take the general division path
 		auto naturalOps = [&](auto tag) {
 			using N = integer<16, decltype(tag), IntegerNumberType::NaturalNumber>;
 			N a(7), b(2), c(100);
 			N q = a / b, r1 = N(1) % b, r2 = c % N(7);
 			N p; p.assign("105");
 			N p2; const bool zeroParsed = parse(std::string("0"), p2);
-			const bool ok = unsigned(q) == 3u && unsigned(r1) == 1u && unsigned(r2) == 2u && unsigned(p) == 105u && !zeroParsed
-				&& !(a == 0) && (a > 0) && (a > -1) && (0 < a) && unsigned(abs(a)) == 7u;
+			const bool ok = unsigned(q) == 3u && unsigned(r1) == 1u && unsigned(r2) == 2u && unsigned(p) == 105u
+				&& zeroParsed && p2.isnan()
+				&& !(a == 0) && (a > 0) && (a > -1) && (0 < a) && unsigned(abs(a)) == 7u
+				&& (N(1) / N(2)).isnan();
 			if (!ok) {
 				std::cout << "Incorrect: natural number operations at " << sizeof(decltype(tag)) * 8 << "-bit limbs\n";
 				++nrOfFailedTestCases;
 			}
 		};
-		// a zero quotient is rejected on every limb layout (exact-fit uint16 and the general path)
-		auto rejectsZeroQuotient = [&](auto tag) {
-			using N = integer<16, decltype(tag), IntegerNumberType::NaturalNumber>;
-			bool thrown = false;
-			try { N q = N(1) / N(2); (void)q; }
-			catch (const integer_encoding_exception&) { thrown = true; }
-			if (!thrown) {
-				std::cout << "Incorrect: natural 1 / 2 did not throw at " << sizeof(decltype(tag)) * 8 << "-bit limbs\n";
-				++nrOfFailedTestCases;
-			}
-		};
-		rejectsZeroQuotient(std::uint8_t{});
-		rejectsZeroQuotient(std::uint16_t{});
-		rejectsZeroQuotient(std::uint32_t{});
 		naturalOps(std::uint8_t{});
+		naturalOps(std::uint16_t{});
 		naturalOps(std::uint32_t{});
 		if (nrOfFailedTestCases - start > 0) {
 			std::cout << "FAIL : natural number test cases\n";
